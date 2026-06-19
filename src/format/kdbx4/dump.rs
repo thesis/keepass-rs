@@ -1,6 +1,7 @@
 use std::io::Write;
 
 use byteorder::{LittleEndian, WriteBytesExt};
+use zeroize::Zeroizing;
 
 use crate::{
     crypt,
@@ -28,6 +29,17 @@ pub fn dump_kdbx4(
     db_key: &DatabaseKey,
     writer: &mut dyn Write,
 ) -> Result<(), DatabaseSaveError> {
+    dump_kdbx4_capturing(db, db_key, writer).map(|_key| ())
+}
+
+/// Like [`dump_kdbx4`], but return the post-KDF transformed key derived under
+/// the freshly-rotated KDF seed, so a caller can re-cache it for a fast re-open
+/// of the just-saved file.
+pub fn dump_kdbx4_capturing(
+    db: &Database,
+    db_key: &DatabaseKey,
+    writer: &mut dyn Write,
+) -> Result<Zeroizing<[u8; 32]>, DatabaseSaveError> {
     if !matches!(db.config.version, DatabaseVersion::KDB4(1)) {
         return Err(DatabaseSaveError::UnsupportedVersion);
     }
@@ -74,6 +86,8 @@ pub fn dump_kdbx4(
     let key_elements: Vec<&[u8]> = key_elements.iter().map(|v| &v[..]).collect();
     let composite_key = crypt::calculate_sha256(&key_elements);
     let transformed_key = kdf.transform_key(&composite_key)?;
+    let mut captured_key = Zeroizing::new([0u8; 32]);
+    captured_key.copy_from_slice(transformed_key.as_ref());
     let master_key = crypt::calculate_sha256(&[&master_seed, &transformed_key]);
 
     // verify credentials
@@ -120,7 +134,7 @@ pub fn dump_kdbx4(
     let payload_hmac = hmac_block_stream::write_hmac_block_stream(&payload_encrypted, &hmac_key);
     writer.write_all(&payload_hmac)?;
 
-    Ok(())
+    Ok(captured_key)
 }
 
 impl KDBX4OuterHeader {

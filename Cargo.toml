@@ -70,6 +70,10 @@ hex = { version = "0.4" }
 hybrid-array = "0.4"
 getrandom = { version = "0.4", features = ["std"] }
 zeroize = { version = "1", features = ["zeroize_derive"] }
+# Secure memory for the post-KDF transformed key (mlock, guard pages,
+# MADV_DONTDUMP, zeroize-on-drop). Downstream fork addition; see
+# src/transformed_key.rs.
+shrouded = "0.2"
 
 # dependencies for command-line utilities
 anyhow = { version = "1", optional = true }

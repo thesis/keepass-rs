@@ -8,8 +8,10 @@ use crate::{
 };
 
 #[cfg(feature = "save_kdbx4")]
-pub(crate) use crate::format::kdbx4::dump::dump_kdbx4;
-pub(crate) use crate::format::kdbx4::parse::{decrypt_kdbx4, parse_kdbx4};
+pub(crate) use crate::format::kdbx4::dump::{dump_kdbx4, dump_kdbx4_capturing};
+pub(crate) use crate::format::kdbx4::parse::{
+    decrypt_kdbx4, parse_kdbx4, parse_kdbx4_capturing, parse_kdbx4_with_transformed_key,
+};
 
 pub use crate::format::kdbx4::parse::{Kdbx4InnerHeaderError, Kdbx4OpenError, Kdbx4OuterHeaderError};
 

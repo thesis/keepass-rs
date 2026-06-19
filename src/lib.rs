@@ -9,8 +9,10 @@ pub mod error;
 pub(crate) mod format;
 
 mod key;
+mod transformed_key;
 
 pub use self::db::Database;
+pub use self::transformed_key::TransformedKey;
 
 #[cfg(feature = "challenge_response")]
 pub use self::key::ChallengeResponseKey;

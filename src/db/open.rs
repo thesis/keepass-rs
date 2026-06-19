@@ -6,10 +6,10 @@ use crate::{
     format::{
         kdb::parse_kdb,
         kdbx3::{decrypt_kdbx3, parse_kdbx3},
-        kdbx4::{decrypt_kdbx4, parse_kdbx4},
+        kdbx4::{decrypt_kdbx4, parse_kdbx4, parse_kdbx4_capturing, parse_kdbx4_with_transformed_key},
         DatabaseVersionParseError,
     },
-    DatabaseKey,
+    DatabaseKey, TransformedKey,
 };
 
 impl Database {
@@ -57,6 +57,46 @@ impl Database {
         let version = DatabaseVersion::parse(data.as_ref())?;
         Ok(version)
     }
+
+    /// Like [`Database::open`], but for KDBX4 also return the post-KDF
+    /// transformed key, so a caller can cache it and skip the KDF on a later
+    /// open of the same on-disk state. Returns `None` for KDBX3/KDB, which
+    /// have no fast path.
+    pub fn open_capturing_key(
+        source: &mut dyn std::io::Read,
+        key: DatabaseKey,
+    ) -> Result<(Database, Option<TransformedKey>), DatabaseOpenError> {
+        let mut data = Vec::new();
+        source.read_to_end(&mut data)?;
+
+        match DatabaseVersion::parse(data.as_ref())? {
+            DatabaseVersion::KDB4(_) => {
+                let (db, transformed) = parse_kdbx4_capturing(data.as_ref(), &key)?;
+                Ok((db, Some(TransformedKey::from_bytes(*transformed)?)))
+            }
+            _ => Ok((Database::parse(data.as_ref(), key)?, None)),
+        }
+    }
+
+    /// Open a KDBX4 database using a previously-captured transformed key,
+    /// skipping the (expensive) KDF. The supplied key is combined with the
+    /// file's master seed and verified via the header HMAC: a stale or wrong
+    /// key fails with an incorrect-key error and never decrypts. Only KDBX4 has
+    /// this fast path; other versions return `UnsupportedVersion`.
+    pub fn open_with_transformed_key(
+        source: &mut dyn std::io::Read,
+        transformed_key: &TransformedKey,
+    ) -> Result<Database, DatabaseOpenError> {
+        let mut data = Vec::new();
+        source.read_to_end(&mut data)?;
+
+        match DatabaseVersion::parse(data.as_ref())? {
+            DatabaseVersion::KDB4(_) => {
+                parse_kdbx4_with_transformed_key(data.as_ref(), transformed_key.as_bytes())
+            }
+            _ => Err(DatabaseOpenError::UnsupportedVersion),
+        }
+    }
 }
 
 /// Errors that can occur when opening a database
@@ -90,6 +130,10 @@ pub enum DatabaseOpenError {
     /// Errors related to parsing the database format
     #[error(transparent)]
     Format(#[from] DatabaseFormatError),
+
+    /// Secure-memory allocation for the captured transformed key failed
+    #[error(transparent)]
+    SecureMemory(#[from] shrouded::ShroudError),
 }
 
 /// Format-specific database parsing errors

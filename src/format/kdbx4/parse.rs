@@ -4,6 +4,7 @@ use std::convert::{TryFrom, TryInto};
 
 use byteorder::{ByteOrder, LittleEndian};
 use thiserror::Error;
+use zeroize::Zeroizing;
 
 use crate::{
     config::{CompressionConfig, DatabaseConfig, InnerCipherConfig, KdfConfig, OuterCipherConfig},
@@ -25,9 +26,46 @@ use crate::{
 
 use super::KDBX4InnerHeader;
 
+/// How the KDBX4 transformed key is obtained when decrypting.
+pub(crate) enum Kdbx4KeySource<'a> {
+    /// Derive it by running the (expensive) KDF over the composite key.
+    Derive(&'a DatabaseKey),
+    /// Use a previously-captured transformed key, skipping the KDF entirely.
+    Transformed(&'a [u8; 32]),
+}
+
+type DecryptedKdbx4 = (DatabaseConfig, Vec<Value<Vec<u8>>>, Box<dyn Cipher>, Vec<u8>);
+
 /// Open, decrypt and parse a KeePass database from a source and key elements
 pub(crate) fn parse_kdbx4(data: &[u8], db_key: &DatabaseKey) -> Result<Database, DatabaseOpenError> {
-    let (config, header_attachments, mut inner_decryptor, xml) = decrypt_kdbx4(data, db_key)?;
+    let (decrypted, _key) = decrypt_kdbx4_inner(data, Kdbx4KeySource::Derive(db_key))?;
+    db_from_decrypted(decrypted)
+}
+
+/// Like [`parse_kdbx4`], but also return the post-KDF transformed key so the
+/// caller can cache it and skip the KDF on a later open of the same on-disk
+/// state.
+pub(crate) fn parse_kdbx4_capturing(
+    data: &[u8],
+    db_key: &DatabaseKey,
+) -> Result<(Database, Zeroizing<[u8; 32]>), DatabaseOpenError> {
+    let (decrypted, key) = decrypt_kdbx4_inner(data, Kdbx4KeySource::Derive(db_key))?;
+    Ok((db_from_decrypted(decrypted)?, key))
+}
+
+/// Open and parse a KDBX4 database using a previously-captured transformed key,
+/// skipping the KDF. A stale or wrong key fails the header HMAC and never
+/// decrypts.
+pub(crate) fn parse_kdbx4_with_transformed_key(
+    data: &[u8],
+    transformed_key: &[u8; 32],
+) -> Result<Database, DatabaseOpenError> {
+    let (decrypted, _key) = decrypt_kdbx4_inner(data, Kdbx4KeySource::Transformed(transformed_key))?;
+    db_from_decrypted(decrypted)
+}
+
+fn db_from_decrypted(decrypted: DecryptedKdbx4) -> Result<Database, DatabaseOpenError> {
+    let (config, header_attachments, mut inner_decryptor, xml) = decrypted;
 
     let mut db = crate::format::xml_db::parse_xml(&xml, &header_attachments, &mut *inner_decryptor)
         .map_err(|e| DatabaseOpenError::Format(DatabaseFormatError::Kdbx4(Kdbx4OpenError::Xml(e))))?;
@@ -38,11 +76,22 @@ pub(crate) fn parse_kdbx4(data: &[u8], db_key: &DatabaseKey) -> Result<Database,
 }
 
 /// Open and decrypt a KeePass KDBX4 database from a source and key elements
+pub(crate) fn decrypt_kdbx4(data: &[u8], db_key: &DatabaseKey) -> Result<DecryptedKdbx4, DatabaseOpenError> {
+    Ok(decrypt_kdbx4_inner(data, Kdbx4KeySource::Derive(db_key))?.0)
+}
+
+/// Decrypt a KDBX4 database, also returning the 32-byte transformed key used.
+///
+/// The transformed key is either derived by running the KDF over the composite
+/// key, or supplied directly (skipping the KDF), per `key_source`. Everything
+/// after the key is obtained — combining it with the master seed, verifying the
+/// header HMAC, and decrypting — is identical for both paths, so a supplied
+/// wrong key fails the HMAC exactly as a wrong password would.
 #[allow(clippy::type_complexity)]
-pub(crate) fn decrypt_kdbx4(
+fn decrypt_kdbx4_inner(
     data: &[u8],
-    db_key: &DatabaseKey,
-) -> Result<(DatabaseConfig, Vec<Value<Vec<u8>>>, Box<dyn Cipher>, Vec<u8>), DatabaseOpenError> {
+    key_source: Kdbx4KeySource<'_>,
+) -> Result<(DecryptedKdbx4, Zeroizing<[u8; 32]>), DatabaseOpenError> {
     let version = DatabaseVersion::parse(data)?;
 
     // parse header
@@ -76,23 +125,34 @@ pub(crate) fn decrypt_kdbx4(
         )));
     }
 
-    #[cfg(feature = "challenge_response")]
-    let db_key = db_key.clone().perform_challenge(&outer_header.kdf_seed)?;
+    // obtain the 32-byte transformed key — by running the KDF (the expensive
+    // step) or from a previously-captured value.
+    let transformed_key: Zeroizing<[u8; 32]> = match key_source {
+        Kdbx4KeySource::Derive(db_key) => {
+            #[cfg(feature = "challenge_response")]
+            let db_key = db_key.clone().perform_challenge(&outer_header.kdf_seed)?;
 
-    // derive master key from composite key, transform_seed, transform_rounds and master_seed
-    let key_elements = db_key.get_key_elements()?;
-    let key_elements: Vec<&[u8]> = key_elements.iter().map(|v| &v[..]).collect();
-    let composite_key = crypt::calculate_sha256(&key_elements);
-    let transformed_key = outer_header
-        .kdf_config
-        .get_kdf_seeded(&outer_header.kdf_seed)
-        .transform_key(&composite_key)?;
-    let master_key = crypt::calculate_sha256(&[outer_header.master_seed.as_ref(), &transformed_key]);
+            // derive master key from composite key, transform_seed, transform_rounds and master_seed
+            let key_elements = db_key.get_key_elements()?;
+            let key_elements: Vec<&[u8]> = key_elements.iter().map(|v| &v[..]).collect();
+            let composite_key = crypt::calculate_sha256(&key_elements);
+            let derived = outer_header
+                .kdf_config
+                .get_kdf_seeded(&outer_header.kdf_seed)
+                .transform_key(&composite_key)?;
+            let mut bytes = Zeroizing::new([0u8; 32]);
+            bytes.copy_from_slice(derived.as_ref());
+            bytes
+        }
+        Kdbx4KeySource::Transformed(tk) => Zeroizing::new(*tk),
+    };
+
+    let master_key = crypt::calculate_sha256(&[outer_header.master_seed.as_ref(), transformed_key.as_slice()]);
 
     // verify credentials
     let hmac_key = crypt::calculate_sha512(&[
         &outer_header.master_seed,
-        &transformed_key,
+        transformed_key.as_slice(),
         &hmac_block_stream::HMAC_KEY_END,
     ]);
     let header_hmac_key = hmac_block_stream::get_hmac_block_key(u64::MAX, &hmac_key);
@@ -144,7 +204,10 @@ pub(crate) fn decrypt_kdbx4(
         public_custom_data: outer_header.public_custom_data,
     };
 
-    Ok((config, header_attachments, inner_decryptor, xml.to_vec()))
+    Ok((
+        (config, header_attachments, inner_decryptor, xml.to_vec()),
+        transformed_key,
+    ))
 }
 
 fn parse_outer_header(data: &[u8]) -> Result<(KDBX4OuterHeader, usize), Kdbx4OuterHeaderError> {
