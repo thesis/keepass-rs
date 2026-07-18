@@ -12,7 +12,7 @@ mod key;
 mod transformed_key;
 
 pub use self::db::Database;
-pub use self::transformed_key::TransformedKey;
+pub use self::transformed_key::{CapturedKdf, TransformedKey};
 
 #[cfg(feature = "challenge_response")]
 pub use self::key::ChallengeResponseKey;

@@ -290,7 +290,7 @@ fn serialize_argon2_version<S: serde::Serializer>(
 
 impl KdfConfig {
     #[cfg(feature = "save_kdbx4")]
-    fn seed_size(&self) -> usize {
+    pub(crate) fn seed_size(&self) -> usize {
         match self {
             KdfConfig::Aes { .. } => 32,
             KdfConfig::Argon2 { .. } => 32,
@@ -298,16 +298,14 @@ impl KdfConfig {
         }
     }
 
-    /// For writing out a database, generate a new KDF seed from the config and return the KDF
-    /// and the generated seed
+    /// For writing out a database, generate a fresh random KDF seed of the
+    /// size this KDF expects
     #[cfg(feature = "save_kdbx4")]
-    pub(crate) fn get_kdf_and_seed(&self) -> Result<(Box<dyn kdf::Kdf>, Vec<u8>), getrandom::Error> {
+    pub(crate) fn random_seed(&self) -> Result<Vec<u8>, getrandom::Error> {
         let mut kdf_seed = vec![0; self.seed_size()];
         getrandom::fill(&mut kdf_seed)?;
 
-        let kdf = self.get_kdf_seeded(&kdf_seed);
-
-        Ok((kdf, kdf_seed))
+        Ok(kdf_seed)
     }
 
     /// For reading a database, generate a KDF from the KDF config and a provided seed
