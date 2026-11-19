@@ -33,3 +33,12 @@ database state. Keep this diff minimal and reviewed; track upstream.
 
 Tests: `tests/transformed_key.rs` (round-trip, wrong-key HMAC rejection, save
 returns a usable key, key bound to the rotating salt).
+
+## Timestamps: jiff, not chrono
+
+Every public timestamp is a `jiff::civil::DateTime` here, where upstream
+uses chrono's `NaiveDateTime`. RustSec marks chrono unmaintained
+(RUSTSEC-2026-0543). The change is a single commit,
+`feat!: replace chrono with jiff`, that touches no fork-only file and
+applies to upstream's master as of 26cb076. Drop this section if
+upstream moves off chrono.
