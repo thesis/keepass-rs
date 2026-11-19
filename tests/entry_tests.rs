@@ -28,7 +28,7 @@ mod entry_tests {
         assert_eq!(e.get("URL"), Some("http://keepass.info/"));
         assert_eq!(e.times.expires, Some(false));
 
-        let et = chrono::NaiveDateTime::parse_from_str("2016-01-06 09:43:01", "%Y-%m-%d %H:%M:%S").unwrap();
+        let et = "2016-01-06T09:43:01".parse::<jiff::civil::DateTime>().unwrap();
         assert_eq!(e.times.expiry, et);
 
         if let Some(ref at) = e.autotype {
@@ -55,7 +55,7 @@ mod entry_tests {
         assert_eq!(e.get_url(), Some(""));
         assert_eq!(e.times.expires, Some(false));
 
-        assert_eq!(format!("{}", e.times.expiry), "2016-01-28 12:25:36");
+        assert_eq!(format!("{}", e.times.expiry), "2016-01-28T12:25:36");
 
         Ok(())
     }
@@ -81,7 +81,7 @@ mod entry_tests {
         assert_eq!(e.tags, vec!["keepass-rs".to_string(), "test".to_string()]);
         assert_eq!(e.times.expires, Some(true));
 
-        assert_eq!(format!("{}", e.times.expiry), "2021-04-10 16:53:18");
+        assert_eq!(format!("{}", e.times.expiry), "2021-04-10T16:53:18");
 
         Ok(())
     }

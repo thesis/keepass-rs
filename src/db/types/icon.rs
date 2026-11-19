@@ -3,7 +3,7 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use chrono::NaiveDateTime;
+use jiff::civil::DateTime;
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -62,7 +62,7 @@ pub struct CustomIcon {
     pub name: Option<String>,
 
     /// Last modification timestamp
-    pub last_modification_time: Option<NaiveDateTime>,
+    pub last_modification_time: Option<DateTime>,
 
     /// The raw image data
     pub data: Vec<u8>,

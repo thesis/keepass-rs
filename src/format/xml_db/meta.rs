@@ -498,7 +498,7 @@ mod tests {
 
     use std::str::FromStr;
 
-    use chrono::NaiveDateTime;
+    use jiff::civil::DateTime;
     use uuid::Uuid;
 
     use super::*;
@@ -511,7 +511,7 @@ mod tests {
                     key: "example_key".to_string(),
                     value: CustomDataValue::String("example_value".to_string()),
                     last_modification_time: Some(Timestamp::new_base64(
-                        NaiveDateTime::from_str("2023-10-05T12:34:56").unwrap(),
+                        DateTime::from_str("2023-10-05T12:34:56").unwrap(),
                     )),
                 },
                 CustomDataItem {
@@ -624,20 +624,20 @@ mod tests {
             generator: Some("TestGenerator".to_string()),
             database_name: Some("TestDB".to_string()),
             database_name_changed: Some(Timestamp::new_iso8601(
-                NaiveDateTime::from_str("2023-10-05T12:34:56").unwrap(),
+                DateTime::from_str("2023-10-05T12:34:56").unwrap(),
             )),
             database_description: Some("A test database".to_string()),
             database_description_changed: Some(Timestamp::new_base64(
-                NaiveDateTime::from_str("2023-10-05T12:34:56").unwrap(),
+                DateTime::from_str("2023-10-05T12:34:56").unwrap(),
             )),
             default_username: Some("admin".to_string()),
             default_username_changed: Some(Timestamp::new_iso8601(
-                NaiveDateTime::from_str("2023-10-05T12:34:56").unwrap(),
+                DateTime::from_str("2023-10-05T12:34:56").unwrap(),
             )),
             maintenance_history_days: Some(30),
             color: Some(Color { r: 255, g: 0, b: 0 }),
             master_key_changed: Some(Timestamp::new_base64(
-                NaiveDateTime::from_str("2023-10-05T12:34:56").unwrap(),
+                DateTime::from_str("2023-10-05T12:34:56").unwrap(),
             )),
             master_key_change_rec: Some(-1),
             master_key_change_force: Some(42),
@@ -664,13 +664,13 @@ mod tests {
                 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
             ]))),
             recycle_bin_changed: Some(Timestamp::new_iso8601(
-                NaiveDateTime::from_str("2023-10-05T12:34:56").unwrap(),
+                DateTime::from_str("2023-10-05T12:34:56").unwrap(),
             )),
             entry_templates_group: Some(UUID(Uuid::from_bytes([
                 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
             ]))),
             entry_templates_group_changed: Some(Timestamp::new_base64(
-                NaiveDateTime::from_str("2023-10-05T12:34:56").unwrap(),
+                DateTime::from_str("2023-10-05T12:34:56").unwrap(),
             )),
             last_selected_group: Some(UUID(Uuid::from_bytes([
                 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f,
@@ -681,7 +681,7 @@ mod tests {
             history_max_items: Some(10),
             history_max_size: Some(1048576),
             settings_changed: Some(Timestamp::new_iso8601(
-                NaiveDateTime::from_str("2023-10-05T12:34:56").unwrap(),
+                DateTime::from_str("2023-10-05T12:34:56").unwrap(),
             )),
             binaries: Some(Binaries {
                 binaries: vec![
@@ -705,14 +705,14 @@ mod tests {
                         key: "example_key".to_string(),
                         value: CustomDataValue::String("example_value".to_string()),
                         last_modification_time: Some(Timestamp::new_base64(
-                            NaiveDateTime::from_str("2023-10-05T12:34:56").unwrap(),
+                            DateTime::from_str("2023-10-05T12:34:56").unwrap(),
                         )),
                     },
                     CustomDataItem {
                         key: "binary_key".to_string(),
                         value: CustomDataValue::Binary(vec![1, 2, 3, 4, 5]),
                         last_modification_time: Some(Timestamp::new_iso8601(
-                            NaiveDateTime::from_str("2023-10-05T12:34:56").unwrap(),
+                            DateTime::from_str("2023-10-05T12:34:56").unwrap(),
                         )),
                     },
                 ],
@@ -811,23 +811,23 @@ mod tests {
         assert_eq!(meta.database_name.unwrap(), "TestDB");
         assert_eq!(
             meta.database_name_changed.unwrap().time,
-            NaiveDateTime::from_str("2023-10-05T12:34:56").unwrap()
+            DateTime::from_str("2023-10-05T12:34:56").unwrap()
         );
         assert_eq!(meta.database_description.unwrap(), "A test database");
         assert_eq!(
             meta.database_description_changed.unwrap().time,
-            NaiveDateTime::from_str("2023-10-05T12:34:56").unwrap()
+            DateTime::from_str("2023-10-05T12:34:56").unwrap()
         );
         assert_eq!(meta.default_username.unwrap(), "admin");
         assert_eq!(
             meta.default_username_changed.unwrap().time,
-            NaiveDateTime::from_str("2023-10-05T12:34:56").unwrap()
+            DateTime::from_str("2023-10-05T12:34:56").unwrap()
         );
         assert_eq!(meta.maintenance_history_days.unwrap(), 30);
         assert_eq!(meta.color.unwrap(), Color { r: 255, g: 0, b: 0 });
         assert_eq!(
             meta.master_key_changed.unwrap().time,
-            NaiveDateTime::from_str("2023-10-05T12:34:56").unwrap()
+            DateTime::from_str("2023-10-05T12:34:56").unwrap()
         );
         assert_eq!(meta.master_key_change_rec.unwrap(), -1);
         assert_eq!(meta.master_key_change_force.unwrap(), 42);
@@ -851,7 +851,7 @@ mod tests {
         );
         assert_eq!(
             meta.recycle_bin_changed.unwrap().time,
-            NaiveDateTime::from_str("2023-10-05T12:34:56").unwrap()
+            DateTime::from_str("2023-10-05T12:34:56").unwrap()
         );
         assert_eq!(
             meta.entry_templates_group.unwrap().0.as_bytes(),
@@ -859,7 +859,7 @@ mod tests {
         );
         assert_eq!(
             meta.entry_templates_group_changed.unwrap().time,
-            NaiveDateTime::from_str("2023-10-05T12:34:56").unwrap()
+            DateTime::from_str("2023-10-05T12:34:56").unwrap()
         );
         assert_eq!(
             meta.last_selected_group.unwrap().0.as_bytes(),
@@ -873,7 +873,7 @@ mod tests {
         assert_eq!(meta.history_max_size.unwrap(), 1048576);
         assert_eq!(
             meta.settings_changed.unwrap().time,
-            NaiveDateTime::from_str("2023-10-05T12:34:56").unwrap()
+            DateTime::from_str("2023-10-05T12:34:56").unwrap()
         );
 
         let binaries = meta.binaries.unwrap();
@@ -902,7 +902,7 @@ mod tests {
         }
         assert_eq!(
             cd.items[0].last_modification_time.as_ref().unwrap().time,
-            NaiveDateTime::from_str("2023-10-05T12:34:56").unwrap()
+            DateTime::from_str("2023-10-05T12:34:56").unwrap()
         );
         assert_eq!(cd.items[1].key, "binary_key");
         match &cd.items[1].value {
@@ -911,7 +911,7 @@ mod tests {
         }
         assert_eq!(
             cd.items[1].last_modification_time.as_ref().unwrap().time,
-            NaiveDateTime::from_str("2023-10-05T12:34:56").unwrap()
+            DateTime::from_str("2023-10-05T12:34:56").unwrap()
         );
     }
 }

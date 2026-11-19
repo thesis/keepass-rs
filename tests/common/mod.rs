@@ -250,8 +250,6 @@ impl Combo {
 
     #[allow(clippy::unwrap_used, clippy::expect_used)]
     pub fn rich_database(&self) -> Database {
-        use chrono::NaiveDate;
-
         let mut db = Database::with_config(self.get_config());
         db.meta.generator = Some("keepass-spec-tests".to_string());
         db.meta.database_name = Some("rich-fixture".to_string());
@@ -279,10 +277,7 @@ impl Combo {
                 e.tags = vec![format!("tag-{i}"), "fixture".to_string()];
                 e.times.expires = Some(true);
 
-                e.times.expiry = NaiveDate::from_ymd_opt(2099, 12, 31)
-                    .unwrap()
-                    .and_hms_opt(23, 59, 59)
-                    .unwrap();
+                e.times.expiry = jiff::civil::date(2099, 12, 31).at(23, 59, 59, 0);
             }
             e.custom_data.insert(
                 format!("entry.cd.{i}"),

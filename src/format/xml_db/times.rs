@@ -76,27 +76,27 @@ mod tests {
 
         assert_eq!(
             times.creation_time.unwrap().time,
-            chrono::NaiveDateTime::parse_from_str("2023-10-05T12:34:56", "%Y-%m-%dT%H:%M:%S").unwrap()
+            "2023-10-05T12:34:56".parse::<jiff::civil::DateTime>().unwrap()
         );
 
         assert_eq!(
             times.last_modification_time.unwrap().time,
-            chrono::NaiveDateTime::parse_from_str("2023-10-06T12:34:56", "%Y-%m-%dT%H:%M:%S").unwrap()
+            "2023-10-06T12:34:56".parse::<jiff::civil::DateTime>().unwrap()
         );
 
         assert_eq!(
             times.last_access_time.unwrap().time,
-            chrono::NaiveDateTime::parse_from_str("2023-10-07T12:34:56", "%Y-%m-%dT%H:%M:%S").unwrap()
+            "2023-10-07T12:34:56".parse::<jiff::civil::DateTime>().unwrap()
         );
 
         assert_eq!(
             times.expiry_time.time,
-            chrono::NaiveDateTime::parse_from_str("2023-12-31T23:59:59", "%Y-%m-%dT%H:%M:%S").unwrap()
+            "2023-12-31T23:59:59".parse::<jiff::civil::DateTime>().unwrap()
         );
 
         assert_eq!(
             times.location_changed.unwrap().time,
-            chrono::NaiveDateTime::parse_from_str("2023-10-08T12:34:56", "%Y-%m-%dT%H:%M:%S").unwrap()
+            "2023-10-08T12:34:56".parse::<jiff::civil::DateTime>().unwrap()
         );
     }
 }

@@ -6,7 +6,6 @@
 #![forbid(unsafe_code)]
 #![allow(missing_docs)]
 
-use chrono::NaiveDate;
 use keepass::{
     config::{DatabaseConfig, KdfConfig},
     db::{
@@ -36,11 +35,8 @@ fn save_then_open(db: &Database) -> Database {
     Database::open(&mut buf.as_slice(), DatabaseKey::new().with_password(PASSWORD)).expect("open")
 }
 
-fn fixed_time() -> chrono::NaiveDateTime {
-    NaiveDate::from_ymd_opt(2024, 6, 15)
-        .unwrap()
-        .and_hms_opt(12, 30, 45)
-        .unwrap()
+fn fixed_time() -> jiff::civil::DateTime {
+    jiff::civil::date(2024, 6, 15).at(12, 30, 45, 0)
 }
 
 /// Build a database touching every public KDBX 4.1 field we can reach.

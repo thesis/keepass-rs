@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use chrono::NaiveDateTime;
+use jiff::civil::DateTime;
 use uuid::Uuid;
 
 use crate::db::{Color, CustomDataItem};
@@ -16,19 +16,19 @@ pub struct Meta {
     pub database_name: Option<String>,
 
     /// time the database name was last changed
-    pub database_name_changed: Option<NaiveDateTime>,
+    pub database_name_changed: Option<DateTime>,
 
     /// description of the database
     pub database_description: Option<String>,
 
     /// time the database description was last changed
-    pub database_description_changed: Option<NaiveDateTime>,
+    pub database_description_changed: Option<DateTime>,
 
     /// default username
     pub default_username: Option<String>,
 
     /// time the default username was last changed
-    pub default_username_changed: Option<NaiveDateTime>,
+    pub default_username_changed: Option<DateTime>,
 
     /// number of days of maintenance history to keep
     pub maintenance_history_days: Option<usize>,
@@ -37,7 +37,7 @@ pub struct Meta {
     pub color: Option<Color>,
 
     /// time the master key was last changed
-    pub master_key_changed: Option<NaiveDateTime>,
+    pub master_key_changed: Option<DateTime>,
 
     /// Number of days until a change of the master key is recommended. -1 means never.
     pub master_key_change_rec: Option<isize>,
@@ -55,13 +55,13 @@ pub struct Meta {
     pub recyclebin_uuid: Option<Uuid>,
 
     /// last time the recycle bin was changed
-    pub recyclebin_changed: Option<NaiveDateTime>,
+    pub recyclebin_changed: Option<DateTime>,
 
     /// UUID of the group containing entry templates
     pub entry_templates_group: Option<Uuid>,
 
     /// last time the group containing entry templates was changed
-    pub entry_templates_group_changed: Option<NaiveDateTime>,
+    pub entry_templates_group_changed: Option<DateTime>,
 
     /// UUID of the last selected group
     pub last_selected_group: Option<Uuid>,
@@ -76,7 +76,7 @@ pub struct Meta {
     pub history_max_size: Option<isize>,
 
     /// Last time the settings were changed
-    pub settings_changed: Option<NaiveDateTime>,
+    pub settings_changed: Option<DateTime>,
 
     /// Additional custom data fields
     pub custom_data: HashMap<String, CustomDataItem>,

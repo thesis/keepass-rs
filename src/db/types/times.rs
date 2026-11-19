@@ -1,27 +1,27 @@
-use chrono::NaiveDateTime;
+use jiff::{civil::DateTime, tz::TimeZone};
 
 /// Timestamps for a [Group][crate::db::Group] or [Entry][crate::db::Entry]
 ///
 /// As the KeePass file format does not store time zone information and does not store sub-second
-/// precision, all times are stored as [NaiveDateTime] with second precision.
-#[derive(Debug, Default, PartialEq, Eq, Clone)]
+/// precision, all times are stored as civil [DateTime] values, in UTC, with second precision.
+#[derive(Debug, PartialEq, Eq, Clone)]
 #[non_exhaustive]
 #[cfg_attr(feature = "serialization", derive(serde::Serialize))]
 pub struct Times {
     /// The time of creation
-    pub creation: Option<NaiveDateTime>,
+    pub creation: Option<DateTime>,
 
     /// The time of the last modification
-    pub last_modification: Option<NaiveDateTime>,
+    pub last_modification: Option<DateTime>,
 
     /// The time of the last access
-    pub last_access: Option<NaiveDateTime>,
+    pub last_access: Option<DateTime>,
 
     /// The time of expiration
-    pub expiry: NaiveDateTime,
+    pub expiry: DateTime,
 
     /// The time of the last location change, which is updated when an entry is moved to a different group.
-    pub location_changed: Option<NaiveDateTime>,
+    pub location_changed: Option<DateTime>,
 
     /// Whether the entry or group expires.
     ///
@@ -33,15 +33,15 @@ pub struct Times {
 }
 
 // On non-browser targets — including wasm32-wasip1 and wasm32-wasip2 —
-// chrono::Utc::now() works (wasi clocks via WASI 0.1+ are supported by
-// chrono's `clock` feature).  The `js_sys::Date::now()` path is only
+// jiff::Timestamp::now() works (it reads std's SystemTime, which WASI 0.1+
+// supports).  The `js_sys::Date::now()` path is only
 // usable in true browser contexts (target_arch = "wasm32" with target_os
 // = "unknown"), where wasm-bindgen post-processes the binary to resolve
 // the placeholder imports.  Targeting "wasm32" alone unintentionally
 // catches WASI builds and breaks linking.
 #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
 fn now_timestamp() -> i64 {
-    chrono::Utc::now().timestamp()
+    jiff::Timestamp::now().as_second()
 }
 
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
@@ -51,18 +51,33 @@ fn now_timestamp() -> i64 {
     (millis / 1000.0) as i64
 }
 
+impl Default for Times {
+    /// Every timestamp unset, except `expiry`, which is the Unix epoch. jiff's own
+    /// `DateTime::default()` is 0000-01-01, so `Default` is not derived.
+    fn default() -> Self {
+        Times {
+            creation: None,
+            last_modification: None,
+            last_access: None,
+            expiry: Times::epoch(),
+            location_changed: None,
+            expires: None,
+            usage_count: None,
+        }
+    }
+}
+
 impl Times {
     /// Returns the current time, without the nanoseconds since the last leap second.
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)] // current time should always be valid
-    pub fn now() -> NaiveDateTime {
-        let now = now_timestamp();
-        chrono::DateTime::from_timestamp(now, 0).unwrap().naive_utc()
+    pub fn now() -> DateTime {
+        let now = jiff::Timestamp::from_second(now_timestamp()).unwrap();
+        TimeZone::UTC.to_datetime(now)
     }
 
-    /// Returns the epoch time (January 1, 1970, 00:00:00 UTC) as a `NaiveDateTime`.
-    #[allow(clippy::unwrap_used, clippy::missing_panics_doc)] // epoch time is always valid
-    pub fn epoch() -> NaiveDateTime {
-        chrono::DateTime::from_timestamp(0, 0).unwrap().naive_utc()
+    /// Returns the epoch time (January 1, 1970, 00:00:00 UTC) as a civil `DateTime`.
+    pub fn epoch() -> DateTime {
+        jiff::civil::date(1970, 1, 1).at(0, 0, 0, 0)
     }
 
     /// Creates a new `Times` instance with all timestamps set to the current time, `expires` set
@@ -78,5 +93,18 @@ impl Times {
             expires: Some(false),
             usage_count: Some(0),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_default_expiry_is_the_unix_epoch() {
+        assert_eq!(
+            Times::default().expiry,
+            jiff::civil::date(1970, 1, 1).at(0, 0, 0, 0)
+        );
     }
 }

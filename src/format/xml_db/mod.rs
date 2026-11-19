@@ -346,7 +346,7 @@ mod tests {
         let deleted_object = DeletedObject {
             uuid: UUID(Uuid::nil()),
             deletion_time: Some(Timestamp::new_iso8601(
-                chrono::NaiveDateTime::parse_from_str("2026-08-15T12:34:56", "%Y-%m-%dT%H:%M:%S").unwrap(),
+                "2026-08-15T12:34:56".parse::<jiff::civil::DateTime>().unwrap(),
             )),
         };
 

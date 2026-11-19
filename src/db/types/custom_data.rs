@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use jiff::civil::DateTime;
 
 /// Custom data field for an [Entry][crate::db::Entry] or [Meta][crate::db::Meta] for database-wide
 /// custom data
@@ -9,7 +9,7 @@ pub struct CustomDataItem {
     pub value: Option<CustomDataValue>,
 
     /// Time the custom data item was last modified
-    pub last_modification_time: Option<NaiveDateTime>,
+    pub last_modification_time: Option<DateTime>,
 }
 
 /// Value of a [CustomDataItem]

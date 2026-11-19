@@ -6,7 +6,7 @@
 
 use std::{collections::HashSet, ops::Deref};
 
-use chrono::NaiveDateTime;
+use jiff::civil::DateTime;
 use thiserror::Error;
 
 use crate::{
@@ -55,7 +55,7 @@ pub struct MergeEvent {
 pub enum MergeError {
     /// An entry has two history items sharing the same timestamp, so their order is ambiguous.
     #[error("Found history entries with the same timestamp ({0}) for entry {1}.")]
-    DuplicateHistoryEntries(NaiveDateTime, EntryId),
+    DuplicateHistoryEntries(DateTime, EntryId),
 
     /// A group could not be moved to its merged location.
     #[error(transparent)]
@@ -85,7 +85,7 @@ impl Database {
 }
 
 /// Get the last update time (modification or location change) of a group, considering its entries and subgroups.
-fn get_last_update(group: GroupRef<'_>) -> Option<NaiveDateTime> {
+fn get_last_update(group: GroupRef<'_>) -> Option<DateTime> {
     let last_update = group.times.last_modification.or(group.times.location_changed);
 
     group
@@ -926,7 +926,7 @@ mod merge_tests {
     }
 
     fn assert_history_ordered(history: &History) {
-        let mut last_modification_time: Option<&chrono::NaiveDateTime> = None;
+        let mut last_modification_time: Option<&jiff::civil::DateTime> = None;
         for entry in &history.entries {
             if last_modification_time.is_none() {
                 last_modification_time = entry.times.last_modification.as_ref();

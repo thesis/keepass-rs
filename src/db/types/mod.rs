@@ -29,7 +29,7 @@ pub use value::Value;
 
 use crate::config::DatabaseConfig;
 
-use chrono::NaiveDateTime;
+use jiff::civil::DateTime;
 use uuid::Uuid;
 
 /// A decrypted KeePass database
@@ -58,7 +58,7 @@ pub struct Database {
     pub(crate) groups: HashMap<GroupId, Group>,
 
     /// References to previously-deleted objects and their deletion times.
-    pub deleted_objects: HashMap<Uuid, Option<NaiveDateTime>>,
+    pub deleted_objects: HashMap<Uuid, Option<DateTime>>,
 }
 
 impl Database {
