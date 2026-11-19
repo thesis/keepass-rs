@@ -11,7 +11,7 @@ use keepass::{
     DatabaseKey,
 };
 
-use rand::{rngs::StdRng, RngCore, SeedableRng};
+use rand::{rngs::StdRng, Rng, SeedableRng};
 
 use sha2::{Digest, Sha256};
 
@@ -279,12 +279,10 @@ impl Combo {
                 e.tags = vec![format!("tag-{i}"), "fixture".to_string()];
                 e.times.expires = Some(true);
 
-                e.times.expiry = Some(
-                    NaiveDate::from_ymd_opt(2099, 12, 31)
-                        .unwrap()
-                        .and_hms_opt(23, 59, 59)
-                        .unwrap(),
-                );
+                e.times.expiry = NaiveDate::from_ymd_opt(2099, 12, 31)
+                    .unwrap()
+                    .and_hms_opt(23, 59, 59)
+                    .unwrap();
             }
             e.custom_data.insert(
                 format!("entry.cd.{i}"),
@@ -335,4 +333,11 @@ pub fn save_to_vec(db: &Database, key: DatabaseKey) -> Vec<u8> {
     let mut buf = Vec::new();
     db.save(&mut buf, key).expect("save_to_vec: save failed");
     buf
+}
+
+#[cfg(feature = "save_kdbx4")]
+pub fn save_then_open(db: &Database, key: DatabaseKey) -> Database {
+    let mut buf = Vec::new();
+    db.save(&mut buf, key.clone()).expect("Unable to save database");
+    Database::open(&mut buf.as_slice(), key).expect("Unable to open database")
 }
